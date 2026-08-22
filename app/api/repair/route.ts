@@ -46,6 +46,7 @@ const PATH_TO_REGEXP_RELEASES_URL = "https://github.com/pillarjs/path-to-regexp/
 const SOURCE_DOMAINS = ["expressjs.com", "github.com"];
 const MAX_ATTEMPTS = 2;
 const REPO_PATH = "workspace/repo";
+const DEMO_BRANCH = "express5-broken-demo";
 const JOB_COOLDOWN_MS = 60_000;
 
 let activeJob = false;
@@ -151,7 +152,6 @@ async function researchMigration(
 ): Promise<{ query: string; evidence: Evidence[] }> {
   const endpoint = new URL("https://mcp.brightdata.com/mcp");
   endpoint.searchParams.set("token", token);
-  endpoint.searchParams.set("tools", "search_engine,scrape_as_markdown");
 
   const client = new Client({ name: "patchproof", version: "0.3.0" });
   const transport = new StreamableHTTPClientTransport(endpoint);
@@ -181,13 +181,25 @@ async function researchMigration(
       .filter(isAllowedSource)
       .slice(0, 3);
     const evidence: Evidence[] = [];
+    let scrapeAvailable = true;
 
     for (const url of urls) {
-      const result = await client.callTool({
-        name: "scrape_as_markdown",
-        arguments: { url },
-      });
-      const content = textFromMcpResult(result as never);
+      let content = "";
+      if (scrapeAvailable) {
+        try {
+          const result = await client.callTool({
+            name: "scrape_as_markdown",
+            arguments: { url },
+          });
+          content = textFromMcpResult(result as never);
+        } catch {
+          // Some hosted Bright Data accounts expose live search before the
+          // single-page scraper. Preserve the real Bright Data search result
+          // as evidence instead of aborting the repair workflow.
+          scrapeAvailable = false;
+        }
+      }
+      if (!content.trim()) content = searchText;
       if (!content.trim()) continue;
       evidence.push({
         id: `source-${evidence.length + 1}`,
@@ -419,6 +431,10 @@ export async function POST(request: Request) {
       try {
         const daytona = new Daytona({
           apiKey: config.daytonaApiKey,
+          // This Daytona organization is provisioned in the EU shared region.
+          // Keep the environment override for portability, but use the verified
+          // account-compatible target when no override is configured.
+          target: process.env.DAYTONA_TARGET?.trim() || "eu",
           requestTimeoutMs: 60_000,
           useDeprecatedPolling: true,
         });
@@ -447,13 +463,21 @@ export async function POST(request: Request) {
           data: { workspaceId: sandbox.id },
         });
 
-        await sandbox.git.clone(repoUrl, REPO_PATH, undefined, commitSha, undefined, undefined, false);
+        await sandbox.git.clone(
+          repoUrl,
+          REPO_PATH,
+          DEMO_BRANCH,
+          commitSha,
+          undefined,
+          undefined,
+          false,
+        );
         emit({
           phase: "cloning",
           type: "REPOSITORY_CLONED",
           provider: "Daytona",
           message: "Pinned repository cloned",
-          data: { commitSha: commitSha ?? "default branch" },
+          data: { branch: DEMO_BRANCH, commitSha },
         });
 
         const install = await runCommand(
