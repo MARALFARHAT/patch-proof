@@ -94,5 +94,9 @@ test("hardens the live workflow around git, concurrency, and the full fixture", 
   assert.match(route, /regexp-like string routes/);
   assert.match(route, /give wildcards a name/);
   assert.match(route, /researchMigration\(config\.brightDataToken, baseline\.output\)/);
+  assert.doesNotMatch(route, /searchParams\.set\("tools"/);
+  assert.match(route, /if \(!content\.trim\(\)\) content = searchText/);
+  assert.match(route, /const DEMO_BRANCH = "express5-broken-demo"/);
+  assert.match(route, /REPO_PATH,\s*DEMO_BRANCH,\s*commitSha/);
   assert.doesNotMatch(route, /false, 1\);/);
 });
