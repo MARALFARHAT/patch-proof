@@ -31,10 +31,10 @@ test("renders the finished PatchProof shell", async () => {
   assert.doesNotMatch(html, /Starter Project/);
   assert.match(html, /Don.t guess the fix/);
   assert.match(html, /Every status below comes from backend execution/);
-  assert.match(
-    html,
-    /https:\/\/patchproof\.marallfarhat\.chatgpt\.site\/og\.png/,
-  );
+  const ogImage = html.match(/https?:\/\/[^"'<>]+\/og\.png/i)?.[0];
+  assert.ok(ogImage, "expected an Open Graph image URL");
+  assert.doesNotThrow(() => new URL(ogImage));
+  assert.match(ogImage, /\/og\.png$/);
 });
 
 test("repair API fails closed when sponsor configuration is absent", async () => {

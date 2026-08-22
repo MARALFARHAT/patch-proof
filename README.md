@@ -1,34 +1,76 @@
 # PatchProof
 
-PatchProof is a constrained autonomous migration agent for one reliable repair category: Express 4 optional-route syntax that breaks after an Express 5 upgrade.
+**Most coding assistants suggest a fix. PatchProof researches the current migration, changes the code in an isolated machine, and proves the same failing test command now passes.**
 
-It does not suggest a hypothetical fix. It retrieves current migration evidence with Bright Data, creates an isolated Daytona sandbox, asks Qwen for a constrained minimal patch, and proves the result with the same `npm test` command that failed before.
+Express 5 changed route-string syntax. A repository that worked on Express 4 can now crash during startup with `path-to-regexp` errors before a single request is served. PatchProof is deliberately narrow: it repairs that migration reliably instead of pretending to fix every repository.
 
-## Sponsor workflow
+[Open the live demo](https://patchproof.marallfarhat.chatgpt.site) · [Inspect the pinned broken fixture](https://github.com/MARALFARHAT/patch-proof/tree/express5-broken-demo)
 
-1. **Daytona** creates an ephemeral sandbox, clones the exact allowlisted commit, installs dependencies, and runs `npm test` to capture the real failure.
-2. **Bright Data** uses its hosted MCP `search_engine` and `scrape_as_markdown` tools to retrieve current Express migration documentation. PatchProof does not need a bulk dataset for this use case.
-3. **Qwen Cloud** receives only the failure output, `package.json`, `src/app.js`, and retrieved evidence. It returns JSON containing a root cause, cited evidence IDs, a minimal diff, and unresolved risks.
-4. PatchProof validates the JSON and diff, allows changes only to `src/app.js`, applies the patch inside Daytona, and runs the same test command again.
-5. Success is displayed only when the real final process exit code is `0`.
+![PatchProof — don't guess the fix, prove it](./public/og.png)
 
-Nosana is intentionally not part of the MVP runtime. This repair profile has no useful GPU workload: Qwen already supplies model inference and Daytona supplies isolated execution. A decorative Nosana call would make the demo less reliable without improving the repair.
+## Three-minute demo
 
-## Runtime contract
+1. Submit the prefilled public repository and pinned broken commit.
+2. Daytona creates an ephemeral sandbox, clones the exact commit, installs dependencies, and runs `npm test`.
+3. The **BEFORE** panel shows the real non-zero exit code and Express 5 error.
+4. Bright Data searches from that error text and retrieves the current Express migration guide plus `path-to-regexp` release evidence.
+5. Qwen returns a citation-bound JSON repair plan and minimal unified diff.
+6. PatchProof validates the patch with its own parser **and Git's `--numstat`**, applies it through an explicit one-file include filter, and reruns the identical command.
+7. The **AFTER** panel turns green only when `npm test` really exits `0`.
 
-- Public repositories only, restricted by `PATCHPROOF_REPO_ALLOWLIST`
+## Why the sponsor stack is structural
+
+- **Bright Data — current evidence.** Hosted MCP `search_engine` and `scrape_as_markdown` retrieve migration sources at job time. The query is derived from the reproduced error, and the UI shows each retrieval timestamp.
+- **Qwen Cloud — constrained reasoning.** Qwen receives the baseline error, `package.json`, `src/app.js`, retrieved evidence, and any previous failed attempt. It must return exactly `{ rootCause, evidenceIds, patch, unresolvedRisks }`.
+- **Daytona — safe action and proof.** Every job runs in an isolated five-minute sandbox. Daytona performs the clone, install, patch, test, rollback, retry, and cleanup; generated code never executes on the application host.
+- **Nosana — intentionally omitted.** This single-repository repair has no meaningful GPU workload because Qwen supplies inference and Daytona supplies execution. Nosana becomes justified for batch-repairing hundreds of repositories with a self-hosted repair or reranking model—not as a decorative API call.
+
+```mermaid
+flowchart TD
+    A[Broken pinned repo] --> B[Daytona reproduces failure]
+    B --> C[Bright Data retrieves current evidence]
+    C --> D[Qwen creates constrained repair plan]
+    D --> E[Git policy validates one-file patch]
+    E --> F[Daytona reruns the same tests]
+    F -->|exit 0| G[Verified repair receipt]
+    F -->|non-zero| D
+```
+
+## Reliability and safety controls
+
+- Exact public-repository allowlist and pinned 40-character commit
+- Full clone so the pinned commit need not remain the default-branch tip
 - Fixed install command: `npm ci --ignore-scripts --no-audit --no-fund`
 - Fixed verification command: `npm test`
-- Supported failure classifier: Express 5 + `path-to-regexp` optional-route syntax
-- Generated changes may touch only `src/app.js`
-- Maximum patch size: 10 KB / 40 changed lines
-- Maximum repair attempts: 2
-- Ephemeral Daytona sandbox with a five-minute TTL and restricted outbound domains
-- A repair is successful only when final verification exits with code `0`
+- Generated changes limited to `src/app.js`, 10 KB, and 40 changed lines
+- Static diff-header validation plus `git apply --numstat`
+- `git apply --include='src/app.js' --exclude='*'` defense in depth
+- One active repair at a time and a per-IP cooldown
+- Two repair attempts maximum, rollback between attempts
+- Ephemeral Daytona sandbox, five-minute TTL, restricted outbound domains, guaranteed cleanup
+- No success claim unless final verification exits `0`
+- Missing credentials fail closed with `503 CONFIGURATION_REQUIRED`; there is no fake replay mode
 
-## Required environment
+## Supported fixture
 
-Configure these through the hosting environment; never commit them:
+The deterministic fixture is stored at the root of the `express5-broken-demo` branch and pinned by commit SHA. It contains three real Express 4 → 5 route breaks:
+
+- Optional parameter punctuation: `/:file.:ext?`
+- Regexp-like string route: `/[discussion|page]/:slug`
+- Unnamed wildcard: `/*`
+
+The default branch keeps a copy under `demo/express5-broken/` for reviewers, but the live agent clones the pinned root-level fixture commit.
+
+## Run locally
+
+```bash
+npm ci
+npm test
+npm run lint
+npm run dev
+```
+
+Configure runtime values outside Git:
 
 ```text
 DAYTONA_API_KEY
@@ -46,14 +88,8 @@ QWEN_MODEL=qwen-plus
 PATCHPROOF_PUBLIC_ORIGIN=https://patchproof.example.com
 ```
 
-`QWEN_BASE_URL` is the workspace-specific Qwen OpenAI-compatible URL without `/chat/completions`. For Seoul, use a Singapore-region Model Studio workspace. `PATCHPROOF_REPO_ALLOWLIST` is a comma-separated list of exact public Git repository URLs. `PATCHPROOF_DEMO_COMMIT` pins the deterministic broken fixture. `PATCHPROOF_PUBLIC_ORIGIN` overrides the trusted production origin used to emit an absolute social-card URL.
+The repair API streams newline-delimited JSON. Every visible activity item corresponds to a real backend event.
 
-## Commands
+## License
 
-```bash
-npm test
-npm run lint
-npm run dev
-```
-
-The API streams newline-delimited JSON. Every UI status is sourced from a real backend event. When runtime configuration is absent, `/api/repair` returns `503 CONFIGURATION_REQUIRED` instead of replaying a demo result.
+MIT — see [LICENSE](./LICENSE).

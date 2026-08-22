@@ -32,6 +32,7 @@ type RepairResult = {
   rootCause?: string;
   unresolvedRisks?: string[];
   evidence?: Evidence[];
+  researchQuery?: string;
   diff?: string;
   error?: string;
   reason?: string;
@@ -87,6 +88,11 @@ function meaningfulOutput(value = "") {
 function eventExitCode(event: RepairEvent) {
   const value = event.data?.exitCode;
   return typeof value === "number" ? value : null;
+}
+
+function retrievedLabel(value: string) {
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - Date.parse(value)) / 60_000));
+  return elapsedMinutes < 1 ? "retrieved just now" : `retrieved ${elapsedMinutes}m ago`;
 }
 
 function SourceIcon() {
@@ -345,11 +351,20 @@ export default function Home() {
           <h2 id="evidence-heading">The claim comes with evidence.</h2>
           <p>PatchProof keeps the diagnosis, retrieved sources, exact diff, and test receipts together—so a developer can audit the repair instead of trusting a suggestion.</p>
           <div className="root-cause"><span>Root cause</span><p>{result?.rootCause ?? result?.reason ?? "Available after a supported failure is reproduced and researched."}</p></div>
+          {result?.researchQuery && (
+            <div className="research-query">
+              <span>Bright Data live query</span>
+              <code>{result.researchQuery}</code>
+            </div>
+          )}
           <div className="sources">
             {(result?.evidence ?? []).map((source) => (
               <a href={source.url} target="_blank" rel="noreferrer" key={source.id}>
                 <span className="source-icon"><SourceIcon /></span>
-                <span><strong>{source.title}</strong><small>{new URL(source.url).hostname}</small></span>
+                <span>
+                  <strong>{source.title}</strong>
+                  <small>{new URL(source.url).hostname} · {retrievedLabel(source.retrievedAt)}</small>
+                </span>
                 <span className="external">↗</span>
               </a>
             ))}

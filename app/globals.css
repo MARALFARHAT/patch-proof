@@ -36,7 +36,7 @@ main { min-height: 100vh; overflow: hidden; }
 .hero::before { width: 520px; height: 520px; top: -240px; left: -420px; }
 .hero::after { width: 380px; height: 380px; top: 10px; right: -360px; }
 .eyebrow { font-family: var(--mono); font-size: 12px; font-weight: 720; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
-.hero h1 { font-size: clamp(54px, 8.4vw, 104px); line-height: .92; margin: 22px auto 28px; max-width: 1000px; letter-spacing: -.072em; font-weight: 880; }
+.hero h1 { font-size: clamp(54px, 8.4vw, 84px); line-height: .92; margin: 22px auto 28px; max-width: 1000px; letter-spacing: -.072em; font-weight: 880; text-wrap: balance; }
 .hero h1 span { position: relative; z-index: 0; white-space: nowrap; }
 .hero h1 span::after { content: ""; position: absolute; height: 28%; left: -2%; right: -3%; bottom: 3%; background: var(--acid); transform: rotate(-1.2deg); z-index: -1; }
 .hero-copy { max-width: 680px; margin: 0 auto; color: #52605a; font-size: 19px; line-height: 1.65; }
@@ -131,6 +131,9 @@ main { min-height: 100vh; overflow: hidden; }
 .root-cause { border-left: 3px solid var(--acid-strong); padding: 4px 0 4px 17px; margin: 28px 0; }
 .root-cause span { font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--green); font-size: 9px; }
 .root-cause p { margin: 7px 0 0; font-weight: 650; font-size: 14px; line-height: 1.5; }
+.research-query { margin: 0 0 18px; padding: 12px 14px; border: 1px solid #cec8b8; border-radius: 9px; background: rgba(255,255,255,.42); display: grid; gap: 6px; }
+.research-query span { color: var(--green); font: 700 9px var(--mono); text-transform: uppercase; letter-spacing: .1em; }
+.research-query code { color: #56625c; font: 10px/1.5 var(--mono); overflow-wrap: anywhere; }
 .sources { display: grid; gap: 8px; }
 .sources a, .source-placeholder { min-height: 62px; color: var(--ink); text-decoration: none; border: 1px solid #cec8b8; background: rgba(255,255,255,.48); border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 11px; }
 .sources a:hover { border-color: #9ca278; background: rgba(255,255,255,.75); }

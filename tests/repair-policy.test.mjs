@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   classifyExpress5Failure,
   parseExpressMajor,
+  validateGitNumstat,
   validatePatch,
 } from "../lib/repair-policy.mjs";
 
@@ -54,10 +55,44 @@ test("rejects patches that touch tests or configuration", () => {
   assert.throws(() => validatePatch(unsafe), /only modify src\/app\.js/);
 });
 
+test("rejects a hidden second unified-diff section that rewrites tests", () => {
+  const bypassAttempt = `${validPatch}
+--- a/test/routes.test.js
++++ b/test/routes.test.js
+@@ -1 +1 @@
+-SAFE
++PWNED
+`;
+  assert.throws(() => validatePatch(bypassAttempt), /only modify src\/app\.js/);
+});
+
+test("trusts git numstat only when git reports the allowlisted file", () => {
+  assert.deepEqual(validateGitNumstat("2\t1\tsrc/app.js\n"), {
+    valid: true,
+    files: ["src/app.js"],
+  });
+  assert.throws(
+    () => validateGitNumstat("2\t1\tsrc/app.js\n1\t1\ttest/routes.test.js\n"),
+    /outside src\/app\.js/,
+  );
+});
+
 test("uses Qwen's supported JSON mode with deterministic server validation", async () => {
   const route = await readFile(new URL("../app/api/repair/route.ts", import.meta.url), "utf8");
   assert.match(route, /response_format:\s*\{ type: "json_object" \}/);
   assert.doesNotMatch(route, /type: "json_schema"/);
   assert.match(route, /qwenModel: process\.env\.QWEN_MODEL \?\? "qwen-plus"/);
   assert.match(route, /Qwen returned unexpected repair-plan fields/);
+});
+
+test("hardens the live workflow around git, concurrency, and the full fixture", async () => {
+  const route = await readFile(new URL("../app/api/repair/route.ts", import.meta.url), "utf8");
+  assert.match(route, /git apply --numstat/);
+  assert.match(route, /--include='src\/app\.js' --exclude='\*'/);
+  assert.match(route, /validateGitNumstat/);
+  assert.match(route, /REPAIR_BUSY/);
+  assert.match(route, /regexp-like string routes/);
+  assert.match(route, /give wildcards a name/);
+  assert.match(route, /researchMigration\(config\.brightDataToken, baseline\.output\)/);
+  assert.doesNotMatch(route, /false, 1\);/);
 });
