@@ -7,6 +7,9 @@ import {
   validatePatch,
 } from "../../../lib/repair-policy.mjs";
 
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
 type RepairEvent = {
   at: string;
   phase: string;
