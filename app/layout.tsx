@@ -3,9 +3,11 @@ import "./globals.css";
 
 const description =
   "Research the current migration, repair the repository in isolation, and prove the fix with real tests.";
+const configuredOrigin = process.env.PATCHPROOF_PUBLIC_ORIGIN?.trim();
 const publicOrigin =
-  process.env.PATCHPROOF_PUBLIC_ORIGIN ??
-  "https://patchproof.marallfarhat.chatgpt.site";
+  configuredOrigin && URL.canParse(configuredOrigin)
+    ? configuredOrigin
+    : "https://patchproof.marallfarhat.chatgpt.site";
 const socialImage = new URL("/og.png", publicOrigin).toString();
 
 export const metadata: Metadata = {
