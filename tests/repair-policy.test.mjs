@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -53,3 +54,10 @@ test("rejects patches that touch tests or configuration", () => {
   assert.throws(() => validatePatch(unsafe), /only modify src\/app\.js/);
 });
 
+test("uses Qwen's supported JSON mode with deterministic server validation", async () => {
+  const route = await readFile(new URL("../app/api/repair/route.ts", import.meta.url), "utf8");
+  assert.match(route, /response_format:\s*\{ type: "json_object" \}/);
+  assert.doesNotMatch(route, /type: "json_schema"/);
+  assert.match(route, /qwenModel: process\.env\.QWEN_MODEL \?\? "qwen-plus"/);
+  assert.match(route, /Qwen returned unexpected repair-plan fields/);
+});

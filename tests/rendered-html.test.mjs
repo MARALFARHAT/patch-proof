@@ -74,12 +74,14 @@ test("repair API advertises its fixed public capability profile", async () => {
   assert.deepEqual(
     {
       configured: body.configured,
+      integrations: body.integrations,
       profile: body.profile,
       verificationCommand: body.verificationCommand,
       maxAttempts: body.maxAttempts,
     },
     {
       configured: false,
+      integrations: { brightData: false, qwen: false, daytona: false },
       profile: "express5-route-syntax",
       verificationCommand: "npm test",
       maxAttempts: 2,

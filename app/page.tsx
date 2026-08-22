@@ -37,6 +37,18 @@ type RepairResult = {
   reason?: string;
 };
 
+type IntegrationStatus = {
+  brightData: boolean;
+  qwen: boolean;
+  daytona: boolean;
+};
+
+const providers: Array<{ key: keyof IntegrationStatus; label: string; role: string }> = [
+  { key: "brightData", label: "Bright Data", role: "live evidence" },
+  { key: "qwen", label: "Qwen", role: "repair reasoning" },
+  { key: "daytona", label: "Daytona", role: "isolated execution" },
+];
+
 const stages = [
   { phase: "sandboxing", label: "Sandbox", detail: "Create isolated runtime" },
   { phase: "reproducing", label: "Reproduce", detail: "Run the real test command" },
@@ -94,15 +106,25 @@ export default function Home() {
   const [running, setRunning] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [configured, setConfigured] = useState<boolean | null>(null);
+  const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/repair")
       .then((response) => response.json())
-      .then((payload: { configured?: boolean; sampleRepo?: string | null }) => {
+      .then((payload: {
+        configured?: boolean;
+        sampleRepo?: string | null;
+        sampleCommit?: string | null;
+        integrations?: IntegrationStatus;
+      }) => {
         if (cancelled) return;
         setConfigured(Boolean(payload.configured));
+        setIntegrations(payload.integrations ?? null);
         if (payload.sampleRepo) setRepoUrl((current) => current || payload.sampleRepo || "");
+        if (payload.sampleCommit) {
+          setCommitSha((current) => current || payload.sampleCommit || "");
+        }
       })
       .catch(() => {
         if (!cancelled) setConfigured(false);
@@ -211,9 +233,10 @@ export default function Home() {
                 placeholder="https://github.com/your-org/express5-broken" required disabled={running} />
             </label>
             <label className="commit-field">
-              <span>Commit SHA <em>optional</em></span>
+              <span>Demo commit <em>pinned</em></span>
               <input type="text" value={commitSha} onChange={(e) => setCommitSha(e.target.value)}
-                placeholder="40-character SHA" pattern="[a-fA-F0-9]{40}" disabled={running} />
+                placeholder="Loading verified fixture…" pattern="[a-fA-F0-9]{40}"
+                readOnly disabled={running} />
             </label>
           </div>
           <button className="repair-button" type="submit" disabled={running || !repoUrl.trim()}>
@@ -225,6 +248,19 @@ export default function Home() {
         <div className={`system-status ${result?.status ?? "idle"}`}>
           <span className="pulse" />{status}<span className="separator">•</span>
           Every status below comes from backend execution
+        </div>
+        <div className="integration-strip" aria-label="Sponsor integration status">
+          {providers.map((provider) => {
+            const ready = integrations?.[provider.key] ?? false;
+            return (
+              <div className={`integration ${ready ? "ready" : "missing"}`} key={provider.key}>
+                <span className="integration-dot" />
+                <strong>{provider.label}</strong>
+                <small>{provider.role}</small>
+                <em>{integrations === null ? "checking" : ready ? "connected" : "needs key"}</em>
+              </div>
+            );
+          })}
         </div>
         {requestError && <div className="request-error" role="alert">{requestError}</div>}
       </section>
