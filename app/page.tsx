@@ -7,7 +7,7 @@ type RepairEvent = {
   phase?: string;
   type: string;
   message?: string;
-  provider?: "Daytona" | "Bright Data" | "Qwen";
+  provider?: "Daytona" | "Bright Data" | "Anthropic";
   data?: Record<string, unknown>;
 };
 
@@ -40,13 +40,13 @@ type RepairResult = {
 
 type IntegrationStatus = {
   brightData: boolean;
-  qwen: boolean;
+  anthropic: boolean;
   daytona: boolean;
 };
 
 const providers: Array<{ key: keyof IntegrationStatus; label: string; role: string }> = [
   { key: "brightData", label: "Bright Data", role: "live evidence" },
-  { key: "qwen", label: "Qwen", role: "repair reasoning" },
+  { key: "anthropic", label: "Anthropic", role: "Claude repair reasoning" },
   { key: "daytona", label: "Daytona", role: "isolated execution" },
 ];
 
@@ -54,8 +54,8 @@ const stages = [
   { phase: "sandboxing", label: "Sandbox", detail: "Create isolated runtime" },
   { phase: "reproducing", label: "Reproduce", detail: "Run the real test command" },
   { phase: "researching", label: "Research", detail: "Retrieve current migration evidence" },
-  { phase: "planning", label: "Plan", detail: "Generate an evidence-bound patch" },
-  { phase: "patching", label: "Repair", detail: "Validate and apply minimal diff" },
+  { phase: "planning", label: "Plan", detail: "Generate evidence-bound source edits" },
+  { phase: "patching", label: "Repair", detail: "Validate edits and generate the exact diff" },
   { phase: "verifying", label: "Verify", detail: "Run the same tests again" },
 ];
 
@@ -255,7 +255,7 @@ export default function Home() {
           <span className="pulse" />{status}<span className="separator">•</span>
           Every status below comes from backend execution
         </div>
-        <div className="integration-strip" aria-label="Sponsor integration status">
+        <div className="integration-strip" aria-label="Provider integration status">
           {providers.map((provider) => {
             const ready = integrations?.[provider.key] ?? false;
             return (
@@ -384,7 +384,7 @@ export default function Home() {
       <footer>
         <div className="footer-brand"><span className="brand-mark small"><span /><span /></span>PatchProof</div>
         <p>Current web evidence. Isolated execution. Verifiable repair.</p>
-        <div className="sponsor-line"><span>Powered by</span><strong>Bright Data</strong><strong>Qwen</strong><strong>Daytona</strong></div>
+        <div className="sponsor-line"><span>Powered by</span><strong>Bright Data</strong><strong>Anthropic</strong><strong>Daytona</strong></div>
       </footer>
     </main>
   );
